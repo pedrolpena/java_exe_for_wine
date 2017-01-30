@@ -1,0 +1,36 @@
+#!/bin/bash
+pidFile="/tmp/javaw.exe.pids.txt"
+
+if [ -f  "$pidFile" ];
+then
+    kill -9 `cat $pidFile`
+    rm $pidFile
+fi
+
+
+#iterate through arguments passed and convert windows paths to nix paths replacing c:\ with $HOME/.wine/drive_c
+
+for arg in "$@"
+do
+tmp=$(echo $arg| sed 's/\\/\//g' | sed 's/[cC]:/USERHOME\/.wine\/drive_c/g')
+args=$args' '$tmp
+done
+
+#replace USERHOME with actual homepath
+
+args=${args/USERHOME/$HOME}
+
+#run program and store pid
+(java $args)&
+printf $!" " >> $pidFile
+
+#This will loop and check every 10 seconds to see if SeasTransceiver is running
+#if it stops then it will kill the java program
+
+
+while ps ax | grep SeasTransceiver| grep -v grep > /dev/null ; do
+   sleep 5
+done
+
+kill -9 `cat $pidFile`
+rm $pidFile
